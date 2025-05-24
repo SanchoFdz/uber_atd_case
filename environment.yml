@@ -1,0 +1,10 @@
+name: uber_atd_case
+channels:
+  - conda-forge
+dependencies:
+  # por ahora es placeholder
+  # en lo que voy viendo que necesito
+  - python>=3.10
+  - pandas
+  - streamlit
+  - scikit-learn
