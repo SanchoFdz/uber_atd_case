@@ -192,3 +192,14 @@ cython_debug/
 .AppleDouble
 .LSOverride
 
+# Ignorar todos los Parquet
+*.parquet
+
+# Pero permitir modelos y shapefiles
+!*.pkl
+!*.shp
+!*.shx
+!*.dbf
+!*.prj
+!*.cpg
+

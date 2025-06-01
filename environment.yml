@@ -1,10 +1,22 @@
-name: uber_atd_case
+name: my_project_env
 channels:
   - conda-forge
+  - defaults
 dependencies:
-  # por ahora es placeholder
-  # en lo que voy viendo que necesito
-  - python>=3.10
-  - pandas
+  - python=3.10
   - streamlit
+  - pandas
+  - numpy
+  - geopandas
+  - matplotlib
+  - seaborn
+  - plotly
+  - folium
+  - branca
+  - xgboost
   - scikit-learn
+  - joblib
+  - pip
+  - flake8
+  - pip:
+      - streamlit-folium
