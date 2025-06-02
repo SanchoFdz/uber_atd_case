@@ -78,7 +78,7 @@ Lo ideal es seguir la ruta lógica que es formular hipótesis en Conversation Op
 Aunque no es el modelo más robusto, se entrenó un pequeño modelo para integrar sus resultados en el dashboard y poder utilizarlo como futuro modelo baseline:
 
 - [Documentación de la implementación](https://github.com/SanchoFdz/uber_atd_case/blob/dev/Task%203%20-%20Modelling.pdf)
-- [Notebook de exploración de datos general]([https://github.com/SanchoFdz/uber_atd_case/tree/dev/notebooks](https://github.com/SanchoFdz/uber_atd_case/blob/dev/notebooks/01_eda.ipynb))
+- [Notebook de exploración de datos general](https://github.com/SanchoFdz/uber_atd_case/blob/dev/notebooks/01_eda.ipynb)
 - [Notebook de exploración de features](https://github.com/SanchoFdz/uber_atd_case/blob/dev/notebooks/02_0_explore_features.ipynb)
 - [Notebook con GridSearch para definición del modelo](https://github.com/SanchoFdz/uber_atd_case/blob/dev/notebooks/03_exploration_of_models.ipynb)
 - [Notebook con pipeline de generación de features y entrenamiento del modelo](https://github.com/SanchoFdz/uber_atd_case/blob/dev/notebooks/03_01_pipeline_and_save_model.ipynb)
