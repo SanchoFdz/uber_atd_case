@@ -54,22 +54,24 @@ def render_sidebar(df):
         benchmark_length = 1
         date_range = [date_range[0], date_range[0]]
 
-    # Guardar filtros en sesión
-    st.session_state.filters = {
-        "date_range": date_range,
-        "benchmark_length": benchmark_length,
-        "sla": sla,
-        "cost_per_min": cost_per_min,
-        "region": region,
-        "territory": territory,
-        "fleet": fleet,
-        "geo": geo,
-        'merchant_surface' : merchant_surface,
-        "weekend": weekend,
-        "hora_pico_ordenes": hora_pico_ordenes,
-        "hora_pico_atd": hora_pico_atd,
-        "driver_experience": driver_category
-    }
+    apply = st.sidebar.button("Apply Filters")
+
+    if apply:
+        st.session_state.filters = {
+            "date_range": date_range,
+            "benchmark_length": benchmark_length,
+            "sla": sla,
+            "cost_per_min": cost_per_min,
+            "region": region,
+            "territory": territory,
+            "fleet": fleet,
+            "geo": geo,
+            "merchant_surface": merchant_surface,
+            "weekend": weekend,
+            "hora_pico_ordenes": hora_pico_ordenes,
+            "hora_pico_atd": hora_pico_atd,
+            "driver_experience": driver_category
+        }
 
     return st.session_state.filters
 

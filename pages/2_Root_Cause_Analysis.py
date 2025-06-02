@@ -116,8 +116,8 @@ else:
 
     # Renderizar gráfico de burbujas con o sin tamaño variable
     if size_enabled:
-        render_bubble_chart(df, kpi_choices[x_kpi], kpi_choices[y_kpi],
+        render_bubble_chart(filtered_df, kpi_choices[x_kpi], kpi_choices[y_kpi],
                             size_enabled, kpi_choices[size_kpi], category_col, filters)
     else:
-        render_bubble_chart(df, kpi_choices[x_kpi], kpi_choices[y_kpi],
+        render_bubble_chart(filtered_df, kpi_choices[x_kpi], kpi_choices[y_kpi],
                             None, None, category_col, filters)

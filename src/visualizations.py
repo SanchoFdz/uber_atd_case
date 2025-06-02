@@ -198,7 +198,7 @@ def render_bubble_chart(df, x_kpi, y_kpi, size_enabled, size_kpi, category_col, 
         })
     ).reset_index()
 
-    color_col = x_kpi
+    color_col = size_kpi
     
     if size_enabled:
         pass

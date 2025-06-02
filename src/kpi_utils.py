@@ -120,7 +120,7 @@ def _compute_kpi(df, kpi,sla,cost_per_min):
     ValueError
         Si el KPI especificado no está implementado.
     """
-    
+
     if kpi == "median_ATD":
         return df["ATD"].median()
 
@@ -131,7 +131,7 @@ def _compute_kpi(df, kpi,sla,cost_per_min):
         return len(df)
 
     if kpi == "p95_ATD":
-        return np.percentile(df["ATD"], 95)
+        return np.nanpercentile(df["ATD"], 95)
 
     if kpi == "breach_cost":
         gamma = df["ATD"].quantile(0.999)
