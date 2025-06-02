@@ -33,7 +33,7 @@ def render_sidebar(df):
     cost_per_min = st.sidebar.slider("Cost per delayed minute (MXN)", 0.0, 3.0, value=float(st.session_state.filters["cost_per_min"]), step=0.1, format="%.2f")
     region = st.sidebar.multiselect("Region", options=df["region"].unique(), default=st.session_state.filters["region"])
     territory = st.sidebar.multiselect("Territory", options=df["territory"].unique(), default=st.session_state.filters["territory"])
-    fleet = st.sidebar.multiselect("Fleet type", options=df["courier_flow"].unique(), default=st.session_state.filters["fleet"])
+    fleet = st.sidebar.multiselect("Courier type", options=df["courier_flow"].unique(), default=st.session_state.filters["fleet"])
     geo = st.sidebar.multiselect("Geo archetype", options=df["geo_archetype"].unique(), default=st.session_state.filters["geo"])
     weekend = st.sidebar.checkbox("Only Weekend", value=st.session_state.filters["weekend"])
     hora_pico_ordenes = st.sidebar.checkbox("Only Order Volume Peak Hour", value=st.session_state.filters["hora_pico_ordenes"])

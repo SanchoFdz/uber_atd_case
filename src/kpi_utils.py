@@ -35,8 +35,8 @@ def calculate_kpis(df, df_prev, sla, cost_per_min):
 
     kpis.append(("Total Orders", len(df), len(df) - len(df_prev), "increase"))
 
-    curr_p95 = np.percentile(df["ATD"], 95)
-    prev_p95 = np.percentile(df_prev["ATD"], 95)
+    curr_p95 = np.nanpercentile(df["ATD"], 95)
+    prev_p95 = np.nanpercentile(df_prev["ATD"], 95)
     kpis.append(("P95 ATD", round(curr_p95, 2), curr_p95 - prev_p95, "reduce"))
 
     gamma = df['ATD'].quantile(0.999)

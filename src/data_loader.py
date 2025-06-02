@@ -335,7 +335,7 @@ def driver_experience_bins(df, base_dir, save_path="../data/views/driver_experie
     return df_copy
 
 st.cache_data()
-def build_historical_performance(df, sla, cost_per_min):
+def build_historical_performance(df, sla, cost_per_min, save_path = '../data/processed/historical_performance_long.parquet'):
     """
     Agrega métricas históricas de performance a nivel de grupo (driver exp + zona + hora + día + fleet).
 
@@ -373,7 +373,7 @@ def build_historical_performance(df, sla, cost_per_min):
     # Marca si una orden incumple SLA
     df["breach"] = (df["ATD"] > sla).astype(int)
 
-    gamma = df['ATD'].quantile(0.999)  # Umbral extremo para penalización
+    gamma = df['ATD'].quantile(0.99)  # Umbral extremo para penalización
     lambda_param = 1
 
     grouped = df.groupby(["territory", "day_of_week", "hour", "driver_experience", "courier_flow"])
@@ -386,6 +386,56 @@ def build_historical_performance(df, sla, cost_per_min):
         breach_cost=("ATD", lambda x: ((x - sla).clip(0) * cost_per_min * ((1 + ((x - sla).clip(0))/gamma)**lambda_param)).sum())
     ).reset_index()
 
-    return performance, avg_orders_per_driver
+    exp_pivot = performance.pivot_table(
+        index=["territory", "day_of_week", "hour"],
+        columns="driver_experience",
+        values="total_orders",
+        aggfunc="sum",
+        observed=True
+    ).fillna(0)
+
+    print(performance.head())
+
+    flow_pivot = performance.pivot_table(
+        index=["territory", "day_of_week", "hour"],
+        columns="courier_flow",
+        values="total_orders",
+        aggfunc="sum",
+        observed=True
+    ).fillna(0)
+
+    exp_pct = exp_pivot.div(exp_pivot.sum(axis=1), axis=0).fillna(0)
+    flow_pct = flow_pivot.div(flow_pivot.sum(axis=1), axis=0).fillna(0)
+
+    exp_pct.columns = [f"%{col}" for col in exp_pct.columns]
+    flow_pct.columns = [f"%{col}" for col in flow_pct.columns]
+
+    historical_long = (
+        exp_pct
+        .join(flow_pct, how="outer")
+        .reset_index()
+        .merge(avg_orders_per_driver, on=["territory", "day_of_week", "hour"], how="left")
+    )
+
+    total_orders = performance.groupby(["territory", "day_of_week", "hour"])["total_orders"].sum().reset_index()
+    historical_long = historical_long.merge(total_orders, on=["territory", "day_of_week", "hour"], how="left")
+
+    historical_long["drivers_per_day"] = historical_long["total_orders"] / historical_long["mean_orders_per_driver"]
+    historical_long["drivers_per_day"] = historical_long["drivers_per_day"].fillna(0).round().astype(int)
+
+    metrics_subset = performance.groupby(["territory", "day_of_week", "hour"]).agg({
+        "median_ATD": "mean",
+        "p95_ATD": "mean",
+        "pct_breaches": "mean",
+        "breach_cost": "sum"
+    }).reset_index()
+
+    historical_long = historical_long.merge(metrics_subset, on=["territory", "day_of_week", "hour"], how="left")
+
+    historical_long = historical_long.drop(columns=["mean_orders_per_driver"])
+
+    historical_long.to_parquet(save_path, index=False)
+
+    return historical_long
 
     

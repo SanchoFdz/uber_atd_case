@@ -1,64 +1,99 @@
 import pandas as pd
 import numpy as np
+from scipy.spatial.distance import cdist
 
-def simulate_plan(plan_df, historical_perf, avg_orders_proxy):
+def simulate_plan_similarity(plan_df, historical_perf):
     """
-    Simula el desempeño esperado de un plan operativo de asignación de conductores,
-    utilizando datos históricos de desempeño por tipo de repartidor y tipo de flota.
-
-    Para cada fila del plan (territorio + día + hora + mezcla de conductores y flota),
-    calcula los KPIs esperados ponderando las métricas históricas por el mix propuesto.
+    Estima los KPIs esperados para un plan operativo, comparando cada fila del plan
+    contra observaciones históricas similares. La similitud se evalúa sobre una representación
+    vectorial de la mezcla de experiencia y tipo de flota, junto con día y hora normalizados.
 
     Parameters
     ----------
     plan_df : pd.DataFrame
-        DataFrame con el plan de operación, debe incluir columnas:
+        Plan propuesto con columnas:
         - 'territory', 'day_of_week', 'hour', 'drivers_per_day'
-        - '%novice', '%low', ..., '%expert'
-        - '%<courier_flow>' para cada tipo relevante de flota.
+        - '%<experience>' para cada tipo de experiencia
+        - '%<flow>' para cada tipo de flota
 
     historical_perf : pd.DataFrame
-        DataFrame histórico con métricas de desempeño agregadas por combinación de:
-        - 'territory', 'day_of_week', 'hour', 'driver_experience', 'courier_flow'
-        y columnas como: 'median_ATD', 'p95_ATD', 'pct_breaches', 'breach_cost', 'total_orders'.
-
-    avg_orders_proxy : pd.DataFrame
-        DataFrame con la métrica `mean_orders_per_driver` por combinación de:
+        Observaciones históricas en formato largo, con columnas:
         - 'territory', 'day_of_week', 'hour'
+        - 'driver_experience', 'courier_flow'
+        - 'total_orders' y KPIs: 'median_ATD', 'p95_ATD', 'pct_breaches', 'breach_cost'
 
     Returns
     -------
     pd.DataFrame
-        Simulación del desempeño esperado, con columnas:
+        Simulación del desempeño esperado con columnas:
         - 'territory', 'day_of_week', 'hour', 'drivers_planned'
         - 'median_ATD', 'p95_ATD', 'pct_breaches', 'breach_cost', 'total_orders', 'expected_orders'
     """
+    experiences = ['novice', 'low', 'medium', 'high', 'expert', 'unassigned']
+    courier_flows = ['Fleet', 'Logistics', 'Motorbike', 'SUV', 'UberX', 'UberEats', 'Onboarder']
+
     results = []
+    historical_perf = historical_perf.set_index(['territory', 'day_of_week', 'hour'], drop=False)
 
     for _, row in plan_df.iterrows():
         territory = row["territory"]
         day = row["day_of_week"]
         hour = row["hour"]
-        n_drivers = row["drivers_per_day"]
+        n_drivers = row["drivers_per_day"] # Lo borré porque no me encanta lo que está saliendo
 
-        # Mezcla de experiencia
-        driver_mix = {
-            "novice": row["%novice"],
-            "low": row["%low"],
-            "medium": row["%medium"],
-            "high": row["%high"],
-            "expert": row["%expert"],
-        }
+        # Vectorizacion del plan actual
+        driver_mix_vector = np.array([row.get(f"%{exp}", 0.0) for exp in experiences])
+        courier_mix_vector = np.array([row.get(f"%{flow}", 0.0) for flow in courier_flows])
+        plan_vector = np.concatenate([[day], [hour], driver_mix_vector, courier_mix_vector])
 
-        # Mezcla de flota (courier_flow)
-        courier_mix = {
-            k.replace("%", ""): v for k, v in row.items()
-            if "%" in k and k.replace("%", "") in historical_perf["courier_flow"].unique()
-        }
+        # tomamos los días y horas a +/- 2 y +/- 1 respectivamente de distancia
+        # mod 7 porque así seguimos con la cintinuidad entre 0-6 y 0-23
+        valid_days = [(day + i) % 7 for i in [-1, 0, 1]]
+        valid_hours = [(hour + i) % 24 for i in range(-2, 3)]
 
-        total_weight = 0
+        # Índices históricos que cumplen condiciones
+        valid_idx = [
+            idx for idx in historical_perf.index
+            if idx[0] == territory and idx[1] in valid_days and idx[2] in valid_hours
+        ] # Identificamos todas las filas del historico que coinciden con el territorio y +/- 1 día, +/- 2 horas
 
-        # Inicializar acumuladores ponderados
+        if not valid_idx:
+            continue
+
+        vectors = []
+        metric_info = []
+
+        for idx in valid_idx:
+            day_i, hour_i = idx[1], idx[2]
+            
+            hist_row = historical_perf.loc[idx]
+
+            hist_drivers = row['drivers_per_day']
+
+            hist_dm_vector = np.array([hist_row.get(f"%{exp}", 0.0) for exp in experiences])
+            hist_courier_vector = np.array([hist_row.get(f"%{flow}", 0.0) for flow in courier_flows])
+            hist_plan_vector = np.concatenate([[day_i], [hour_i], hist_dm_vector, hist_courier_vector])
+
+            vectors.append(hist_plan_vector)
+            
+            metrics = historical_perf[
+                (historical_perf["territory"] == territory) &
+                (historical_perf["day_of_week"] == day_i) &
+                (historical_perf["hour"] == hour_i)
+            ].iloc[0]
+
+            metric_info.append(metrics)
+
+        vectors = np.vstack(vectors)
+        distances = cdist([plan_vector], vectors, metric='euclidean')[0]
+        sorted_indices = np.argsort(distances)
+
+        k = min(5, len(sorted_indices))
+        weights = 1 / (distances[sorted_indices[:k]] + 1e-5)
+        weights /= weights.sum()
+
+        selected_metrics = [metric_info[i] for i in sorted_indices[:k]]
+        
         weighted_metrics = {
             "median_ATD": 0,
             "p95_ATD": 0,
@@ -67,41 +102,31 @@ def simulate_plan(plan_df, historical_perf, avg_orders_proxy):
             "total_orders": 0
         }
 
-        # Ponderar métricas por mezcla de experiencia y tipo de flota
-        for exp, exp_pct in driver_mix.items():
-            for flow, flow_pct in courier_mix.items():
-                weight = exp_pct * flow_pct
-                total_weight += weight
+        for i, metrics in enumerate(selected_metrics):
+            for kpi in weighted_metrics:
+                weighted_metrics[kpi] += metrics[kpi] * weights[i]
 
-                match = historical_perf[
-                    (historical_perf["territory"] == territory) &
-                    (historical_perf["day_of_week"] == day) &
-                    (historical_perf["hour"] == hour) &
-                    (historical_perf["driver_experience"] == exp) &
-                    (historical_perf["courier_flow"] == flow)
-                ]
-
-                if not match.empty:
-                    row_perf = match.iloc[0]
-                    for k in weighted_metrics:
-                        weighted_metrics[k] += row_perf[k] * weight
-
-        # Estimar órdenes esperadas con proxy histórico
-        match_proxy = avg_orders_proxy[
-            (avg_orders_proxy["territory"] == territory) &
-            (avg_orders_proxy["day_of_week"] == day) &
-            (avg_orders_proxy["hour"] == hour)
-        ]
-
-        avg_orders = match_proxy["mean_orders_per_driver"].values
-        expected_orders = n_drivers * avg_orders[0] if len(avg_orders) > 0 else np.nan
-        weighted_metrics["expected_orders"] = expected_orders
+        for kpi in weighted_metrics:
+            weighted_metrics[kpi] = round(weighted_metrics[kpi], 2)
 
         results.append({
             "territory": territory,
             "day_of_week": day,
             "hour": hour,
-            "drivers_planned": n_drivers,
+            "%novice": row['%novice'],
+            "%low": row['%low'],
+            "%medium": row['%medium'],
+            "%high": row['%high'],
+            "%expert": row['%expert'],
+            "%unassigned": row['%unassigned'],
+            "%Fleet": row['%Fleet'],
+            "%Logistics": row['%Logistics'],
+            "%Motorbike": row['%Motorbike'],
+            "%Onboarder": row['%Onboarder'],
+            "%SUV": row['%SUV'],
+            "%UberEats": row['%UberEats'],
+            "%UberX": row['%UberX'],
+            #"drivers_planned": n_drivers,
             **weighted_metrics
         })
 

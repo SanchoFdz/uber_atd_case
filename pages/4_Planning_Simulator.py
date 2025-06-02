@@ -3,9 +3,11 @@ import pandas as pd
 import numpy as np
 from src.global_filters import render_sidebar
 from src.data_loader import build_historical_performance
-from src.model_utils import simulate_plan
+from src.model_utils import simulate_plan_similarity
+import os
 
 # Título de la sección principal de planeación y simulación
+base_dir = os.path.dirname(__file__)
 st.title("📋 Planning & Simulation")
 
 # Cargar el DataFrame principal desde el estado de sesión
@@ -24,11 +26,14 @@ st.markdown(
 uploaded = st.file_uploader("Upload Config CSV", type=["csv"])
 
 # Calcular performance histórico para simular impacto de cambios propuestos
-historical_perf, avg_orders_proxy = build_historical_performance(
-    df,
-    sla=filters["sla"],
-    cost_per_min=filters["cost_per_min"]
-)
+hist_long_path = os.path.join(base_dir, "../data/processed/historical_performance_long.parquet")
+
+if not os.path.exists(hist_long_path):
+    hist_long_df = build_historical_performance(df, filters['sla'], filters['cost_per_min'], hist_long_path)
+    st.session_state.hist_long_df = hist_long_df
+else:
+    hist_long_df = pd.read_parquet(hist_long_path)
+    st.session_state.hist_long_df = hist_long_df
 
 # Si el usuario sube un archivo de configuración
 if uploaded:
@@ -43,10 +48,10 @@ if uploaded:
     st.subheader("📈 Simulated Impact")
 
     # Ejecutar simulación del plan con base en datos históricos
-    result = simulate_plan(sim_df, historical_perf, avg_orders_proxy)
+    result = simulate_plan_similarity(sim_df, hist_long_df)
 
     # Mostrar resultados formateados con dos decimales
-    st.dataframe(result.style.format(precision=2))
+    st.dataframe(result)
 
     # Mensaje de éxito indicando que la simulación fue ejecutada
     st.success("Basic simulation based on historical performance")

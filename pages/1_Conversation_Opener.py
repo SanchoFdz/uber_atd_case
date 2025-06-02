@@ -91,11 +91,14 @@ else:
             st.info("Please select at least 7 days to view rolling trends.")
         else:
             # Genera tendencias suavizadas por día para KPI actual y comparativo
-            trend_df = trend_kpis(filtered_df, prev_df, filter_map[kpi_column],
-                                  filters['sla'], filters['cost_per_min'])
+            try:
+                trend_df = trend_kpis(filtered_df, prev_df, filter_map[kpi_column],
+                                    filters['sla'], filters['cost_per_min'])
 
-            # Despliega gráfico de línea con series temporales
-            st.line_chart(trend_df.set_index("date"), height=350, use_container_width=True)
+                # Despliega gráfico de línea con series temporales
+                st.line_chart(trend_df.set_index("date"), height=350, use_container_width=True)
+            except:
+                st.info("Not enough data points for that unique filter combination, please try out other filters.")
 
         # Mapa coroplético con colores por zona y KPI seleccionado
         st.subheader("🗺️ KPI Heatmap over Mexico City")
@@ -111,4 +114,4 @@ else:
         
         except Exception as e:
             # En caso de error de renderización, mostrar advertencia
-            st.warning(f"Error generating map, please select other filters while we work on it. Sorry")
+            st.info("Not enough data points for that unique filter combination, please try out other filters.")

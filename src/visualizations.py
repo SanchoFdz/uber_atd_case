@@ -11,6 +11,14 @@ import plotly.graph_objects as go
 import streamlit as st
 from streamlit_folium import st_folium
 from src.kpi_utils import driver_kpis, _compute_kpi
+import plotly.io as pio
+
+pio.templates["custom"] = go.layout.Template(
+    layout_colorway=['#3FC060', 'black', 'white']
+)
+
+pio.templates.default = "custom"
+
 
 def build_zone_map(zone_df,
                    gdf,
@@ -144,6 +152,8 @@ def render_heatmap(filtered_df,x_col, y_col, val_display, kpi_col, sla, cost_per
     matrix.dropna(axis=0, how="all", inplace=True)
     matrix.dropna(axis=1, how="all", inplace=True)
 
+    matrix = matrix.fillna(0)
+
     if y_col in label_mapper:
         matrix.index = matrix.index.map(label_mapper[y_col])
     if x_col in label_mapper:
@@ -200,16 +210,26 @@ def render_bubble_chart(df, x_kpi, y_kpi, size_enabled, size_kpi, category_col, 
 
     color_col = size_kpi
     
-    if size_enabled:
-        pass
+    if size_enabled and size_kpi:
+        # Si el usuario ingresa un kpi para tamaño del marcador, lo usamos
+        grouped = grouped.dropna(subset=[x_kpi, y_kpi, size_kpi])
+        color_scale = "RdYlGn_r"
+        final_size_col = size_kpi
     else:
-        grouped[size_kpi] = 200
+        # Si no, ingresamos un valor genérico y usamos esa columna como tamaño
+        grouped["Tamaño"] = 30
+
+        # TO-DO esto no jala al 100, creo que tengo que cambiarlo directo en la configuración de plotly (?)
+        grouped["Color"] = "Size was not enabled"
+        final_size_col = "Tamaño"
+        color_col = "Color"
+        grouped = grouped.dropna(subset=[x_kpi, y_kpi])
     
     fig = px.scatter(
         grouped,
         x=x_kpi,
         y=y_kpi,
-        size=size_kpi,
+        size=final_size_col,
         color=color_col,
         hover_name=category_col,
         size_max=100,
