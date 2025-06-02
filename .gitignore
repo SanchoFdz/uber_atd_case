@@ -194,6 +194,7 @@ cython_debug/
 
 # Ignorar todos los Parquet
 *.parquet
+*.csv
 
 # Pero permitir modelos y shapefiles
 !*.pkl
