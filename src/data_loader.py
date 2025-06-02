@@ -29,6 +29,10 @@ def load_data():
 
     data_path = os.path.join(base_dir, "../data/views/vw_ATD_dashboard.parquet")
     model_path = os.path.join(base_dir, "../models/xgb_model.pkl")
+    views_dir = os.path.join(base_dir, "../data/views")
+
+    if not os.path.exists(views_dir):
+        os.makedirs(views_dir)
 
     if os.path.exists(data_path):  # Si el archivo de datos ya existe, lo carga
         df = pd.read_parquet(data_path)
