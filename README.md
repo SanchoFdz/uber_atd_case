@@ -91,7 +91,7 @@ Aunque no es el modelo más robusto, se entrenó un pequeño modelo para integra
 Para presentar la aplicación y justificar su desarrollo se hizo un estudio del caso que cubre los elementos que debe cubrir un estudio de caso. Se puede consultar la presentación directamente como:
 
 - [Pdf](.)
-- [Editable de Canva](https://www.canva.com/design/DAGpKEbrpvk/M2nDNPXCPPyEPQ_g9Ws4-A/edit?utm_content=DAGpKEbrpvk&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton)
+- [Editable de Canva](https://www.canva.com/design/DAGpKEbrpvk/uY3T6ReVhykgWvocFNFeOw/view?utm_content=DAGpKEbrpvk&utm_campaign=share_your_design&utm_medium=link2&utm_source=shareyourdesignpanel)
 
 
 
