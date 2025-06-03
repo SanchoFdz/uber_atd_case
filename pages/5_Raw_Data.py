@@ -45,7 +45,7 @@ with st.expander("🔍 Filter Options", expanded=True):
     st.markdown("---")
     st.markdown("### ⚙️ SLA & Delay Cost Filters")
     sla = st.slider("Select SLA threshold (minutes)", 5, 90, 30)
-    cost_per_min = st.slider("Cost per delayed minute", 0, 3, 0.1)
+    cost_per_min = st.slider("Cost per delayed minute", min_value=0.0, max_value=3.0, value=0.1, step=0.1)
 
 # === Aplicar los filtros seleccionados ===
 df_filtered = df.copy()
@@ -68,7 +68,10 @@ for col, vals in selected_filters.items():
 
 # --- Cálculo de KPIs derivados ---
 df_filtered["delay_minutes"] = (df_filtered["ATD"] - sla).clip(lower=0)  # Retrasos positivos solamente
-df_filtered["delay_cost"] = df_filtered["delay_minutes"] * cost_per_min  # Costo total por retraso
+gamma = df_filtered['ATD'].quantile(0.99)
+lambda_param = 1
+
+df_filtered['breach_cost'] = (df_filtered['ATD'] - sla).clip(0) * cost_per_min * ((1 + ((df_filtered['ATD'] - sla).clip(0))/gamma)**lambda_param)
 
 # === Mostrar resultados ===
 st.subheader("📄 Filtered Data")
